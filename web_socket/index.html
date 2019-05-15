@@ -1,0 +1,75 @@
+
+<html>
+    <head>
+        <title>Hello cruel world</title>
+        <!-- Latest compiled and minified CSS -->
+        <script src="https://code.jquery.com/jquery-3.4.0.min.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        
+    </head>
+    <body>
+        <div class="container-fluid">
+            <div class="panel panel-default col-md-4">
+                <div class="panel-heading">NoC Config Page</div>
+                <div class="panel-body">
+                    <div class="row mt-2">
+                        <label for="select_arch">Choose Noc Architecture</label>
+                        <select class="browser-default custom-select" id="select_arch">
+                            <option value="1">Noc Mesh</option>
+                            <option value="2">Noc Ring</option>
+                            <option value="3">Noc Mesh 2d</option>
+                        </select>
+                    </div>  
+                    <div class="row mt-2">
+                        <label for="input_x">Nodes X</label>
+                        <input type="number" min="2" class="form-control" id="input_x" placeholder="Size of X">
+                    </div>
+                    <div class="row mt-2">
+                        <label for="input_y">Nodes Y</label>
+                        <input type="number" min="2" class="form-control" id="input_y" placeholder="Size of Y">
+                    </div>
+
+                    <div class="row mt-3">
+                        <label for="filename">Filename</label>
+                        <input type="text" class="form-control" id="filename" placeholder="Filename">
+                    </div>
+                    <div class="row mt-3">
+                        <label for="select_out">Chose Output File Format</label>
+                        <select class="browser-default custom-select" id="select_out">
+                            <option value="1">JSON</option>
+                            <option value="2">XML</option>
+                        </select>
+                    </div>
+                    <div class="row mt-3">
+                        <button type="button" id="btgenerate" align="center" class="btn btn-primary">Generate</button>
+                    </div>
+                </div>
+            </div>            
+        </div>            
+    </body>
+</html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+<script>
+    // var socket = io();
+    const socket = io("http://localhost:8080");
+
+    $("#btgenerate").click(function () {
+        var data = {
+            "noc":{
+                "noc_arch": $("#select_arch").val(),
+                "noc_x": $("#input_x").val(),
+                "noc_y": $("#input_y").val(),
+                "filename": $("#filename").val()
+            },
+            "type": $("#select_out").val()
+        }
+
+        console.log(data);
+        socket.emit("message", data);
+    });
+
+</script>
