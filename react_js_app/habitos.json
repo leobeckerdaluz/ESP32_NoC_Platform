@@ -1,0 +1,32 @@
+[
+    {
+        "id": 0,
+        "nome": "Correr",
+        "descricao": "Corre muito"
+    },
+    {
+        "id": 1,
+        "nome": "Musculação",
+        "descricao": "Muita academia"
+    },
+    {
+        "id": 2,
+        "nome": "Andar de bike",
+        "descricao": "Bike demais"
+    },
+    {
+        "id": 3,
+        "nome": "Futiba",
+        "descricao": "Dá-lhe Grêmio"
+    },
+    {
+        "id": 4,
+        "nome": "Basquete",
+        "descricao": "Basquete demais"
+    },
+    {
+        "id": 5,
+        "nome": "Caminhar",
+        "descricao": "Caminhar muito"
+    }
+]

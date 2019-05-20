@@ -1,30 +1,38 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import {createAppContainer, createStackNavigator} from 'react-navigation';
+import HabitosPage from './src/pages/HabitosPage';
 
-export default class App extends React.Component {
-  render() {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.titulo}> SÉEEENDY TÍTULO </Text>
-        <Text style={styles.conteudo}>>SÉEEENDY CONTEUDO</Text>
-      </View>
-    );
+const AppNavigator = createStackNavigator(
+  {
+    'Main':{
+      screen: HabitosPage,
+      navigationOptions:{
+        title: 'Viva o Séndy!',
+        headerTitleStyle:{
+          textAlign:'left',
+          fontSize: 30,
+          color: 'orange',
+        }
+      }
+    }
+  },
+  {
+    defaultNavigationOptions: {
+      title: 'séndy',
+      // headerTintColor: 'white',
+      headerStyle: {
+        backgroundColor: 'green',
+        borderBottomColor: 'black',
+      },
+      headerTitleStyle:{
+        color: 'white',
+        fontSize: 20,
+        flexGrow: 1,
+        textAlign: 'center',
+      }
+    }
   }
-}
+);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titulo: {
-    color: "red",
-    fontSize: 16,
-  },
-  conteudo: {
-    color: "black",
-    fontSize: 12,
-  },
-});
+const AppContainer = createAppContainer(AppNavigator);
+
+export default AppContainer;
