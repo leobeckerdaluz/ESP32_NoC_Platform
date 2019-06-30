@@ -1,86 +1,13 @@
 #include <iostream>
 #include <stdlib.h>
-#include <thread>
-#include <vector>
-#include "../include/defines.h"
+#include "defines.h"
 #include <stdio.h>
-// derlei
-#include <unistd.h>
 
-enum all_topologies { ANEL_1D, ANEL_2D, MESH };
-enum all_directions { LEFT, RIGHT, TOP, BOTTOM, ANY, ARRIVED };
 
 void get_direction(int current_id, int target, int *distance, int *direction, int topologia_id, int qtd_nodos_X_Y);
 void get_XY(int id, int *id_X, int *id_Y, int qtd_nodos_X_Y);
 int getID_by_XY(int x_source, int y_source, int qtd_nodos_X_Y);
 int get_next_by_dir(int id, int direction_mode, int topologia_local, int qtde_nodos_X_Y);
-
-
-// ---------------------------------------------------------------------------
-// Método que executa a comunicação
-void run_PEs(int source, int target, int message_id, int topologia, int qtde_nodos_X_Y){
-    int current_id = source;
-    while(current_id != target) {
-
-
-        usleep(1000000);
-        printf("PAROOOOOOOOOOUUUUUUUUUUUUUUUU\n");
-
-
-        int direction;
-        int distance;
-        
-        // Obtém a direção e a distância do próximo router
-        get_direction(current_id, target, &distance, &direction, topologia, qtde_nodos_X_Y);
-        printf("[%d] to [%d] | distance:%d | direction:%d\n", current_id, target, distance, direction);
-
-        // Verifica a direção retornada
-        if(direction == LEFT) {
-            // Vai para esquerda
-            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições à esquerda!\n", current_id, message_id, target, distance);
-            // Obtém o id do router da esquerda
-            int left = get_next_by_dir(current_id, LEFT, topologia, qtde_nodos_X_Y);
-            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", current_id, message_id, left);
-            current_id = left;
-        }
-        else if (direction == RIGHT) {
-            // Vai para direita
-            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições à direita!\n", current_id, message_id, target, distance);
-            // Obtém o id do router da direita
-            int right = get_next_by_dir(current_id, RIGHT, topologia, qtde_nodos_X_Y);
-            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", current_id, message_id, right);
-            current_id = right;
-        }
-        else if (direction == TOP) {
-            // Vai para cima
-            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições pra cima!\n", current_id, message_id, target, distance);
-            // Obtém o id do router de cima
-            int top = get_next_by_dir(current_id, TOP, topologia, qtde_nodos_X_Y);
-            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", current_id, message_id, top);
-            current_id = top;
-        }
-        else if (direction == BOTTOM) {
-            // Vai para baixo
-            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições pra baixo!\n", current_id, message_id, target, distance);
-            // Obtém o id do router de cima
-            int bottom = get_next_by_dir(current_id, BOTTOM, topologia, qtde_nodos_X_Y);
-            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", current_id, message_id, bottom);
-            current_id = bottom;
-        }
-
-
-        // TOPOLOGIA_ANEL_1D
-        else if (direction == ARRIVED && topologia == ANEL_1D) {
-            printf("Router%d -> R&A -> A msg %d em trânsito chegou no destino em [%d]!\n", current_id, message_id, target);
-        }
-        else if (direction == ANY && topologia == ANEL_1D) {
-            // Tanto faz
-            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Está à %d posições tanto à direita como à esquerda. Enviando para a direita!\n", current_id, message_id, target, distance);
-            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", current_id, message_id, right);
-            current_id = right;
-        }
-    }
-}
 
 
 // ---------------------------------------------------------------------------
@@ -110,7 +37,7 @@ void get_direction(int current_id, int target, int *distance, int *direction, in
         }
         // Distância é igual à metade do vetor, então tanto faz
         else{
-            *direction = ANY;
+            *direction = ANY_X;
             *distance = halfVector;
         }
     }
@@ -123,8 +50,10 @@ void get_direction(int current_id, int target, int *distance, int *direction, in
         int target_Y;
         get_XY(target, &target_X, &target_Y, qtde_nodos_X_Y);
 
+        #if DEBUG_CONSOLE
         printf("target: %d, targetX: %d, targetY: %d\n", target, target_X, target_Y);
         printf("current: %d, currentX: %d, currentY: %d\n", current_id, current_X, current_Y);
+        #endif
 
         // TOPOLOGIA_MESH
         if (topologia_id == MESH){
@@ -164,7 +93,9 @@ void get_direction(int current_id, int target, int *distance, int *direction, in
                 *direction = direction_coluna;
             }
 
-            printf("[%d][%d] to [%d][%d] | distance:%d | direction:%d\n", current_Y, current_X, target_Y, target_X, distance, direction);
+            #if DEBUG_CONSOLE
+            printf("[%d][%d] to [%d][%d] | distance:%d | direction:%d\n", current_Y, current_X, target_Y, target_X, *distance, *direction);
+            #endif
         }
         // TOPOLOGIA_ANEL_2D
         else if (topologia_id == ANEL_2D) {
@@ -176,12 +107,15 @@ void get_direction(int current_id, int target, int *distance, int *direction, in
             if(distance_linha == 0)  {
                 direction_linha = ARRIVED;
             }  
-            else if(distance_linha >= halfVector){
+            else if(distance_linha > halfVector){
                 direction_linha = target_X < current_X ? RIGHT : LEFT;
                 distance_linha = qtde_nodos_X_Y - distance_linha;
             }
             else if(distance_linha < halfVector) {
                 direction_linha = target_X < current_X ? LEFT : RIGHT;
+            }
+            else if (distance_linha == halfVector){
+                direction_linha = ANY_X;
             }
 
             // Obtém a distância e a direção para Y
@@ -190,12 +124,15 @@ void get_direction(int current_id, int target, int *distance, int *direction, in
             if(distance_coluna == 0) {
                 direction_coluna = ARRIVED;
             }  
-            else if(distance_coluna >= halfVector) {
+            else if(distance_coluna > halfVector) {
                 direction_coluna = (target_Y < current_Y) ? TOP : BOTTOM;
                 distance_coluna = qtde_nodos_X_Y - distance_coluna;
             }
             else if(distance_coluna < halfVector) {
                 direction_coluna = (target_Y < current_Y) ? BOTTOM : TOP;
+            }
+            else if (distance_coluna == halfVector){
+                direction_coluna = ANY_Y;
             }
 
 
@@ -215,7 +152,9 @@ void get_direction(int current_id, int target, int *distance, int *direction, in
                 *direction = direction_coluna;
             }
 
-            printf("[%d][%d] to [%d][%d] | distance:%d | direction:%d\n", current_Y, current_X, target_Y, target_X, distance, direction);
+            #if DEBUG_CONSOLE
+            printf("[%d][%d] to [%d][%d] | distance:%d | direction:%d\n", current_Y, current_X, target_Y, target_X, *distance, *direction);
+            #endif
         }
     }
 }
@@ -246,8 +185,8 @@ int get_next_by_dir(int id, int direction_mode, int topologia_local, int qtde_no
     left = right = top = bottom = BIG_NUMBER;
 
     if (topologia_local == ANEL_1D) {
-        left = (id==0) ? (qtde_nodos_X_Y * qtde_nodos_X_Y) - 1 : id-1;
-        right = (id == (qtde_nodos_X_Y*qtde_nodos_X_Y) - 1) ? 0 : id+1;
+        left = (id==0) ? qtde_nodos_X_Y - 1 : id-1;
+        right = (id == qtde_nodos_X_Y - 1) ? 0 : id+1;
     }
     else if (topologia_local == ANEL_2D) {
         left = (id%qtde_nodos_X_Y == 0) ? id + qtde_nodos_X_Y - 1 : id-1;
