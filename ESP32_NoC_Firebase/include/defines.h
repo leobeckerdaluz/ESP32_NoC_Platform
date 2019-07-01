@@ -1,3 +1,4 @@
+#include <Arduino.h>
 
 #define FIREBASE_HOST "noc-react-js-app.firebaseio.com"
 #define FIREBASE_AUTH "20lXtCo3e6aKGuBjAltvR0KGJ7n0JbSI18auMBPb"
@@ -7,6 +8,7 @@
 // #define DEBUG_CONSOLE1
 
 #define BIG_NUMBER 9999
+#define ROTATE90_MATRIX true
 
 enum all_topologies { ANEL_1D, ANEL_2D, MESH };
 enum all_directions { LEFT, RIGHT, TOP, BOTTOM, ANY_X, ANY_Y, ARRIVED };
@@ -20,3 +22,9 @@ extern void BlinkXY(int qtde_nodos_X_Y);
 extern void ShowMessageDisplay(int source, int target, int message_id);
 extern void ShowCurrentID(int current_id, int target, int message_id, int qtde_nodos_X_Y);
 extern void StartAll(int qtde_nodos_X_Y);
+
+// OLED
+void SetDisplayMessage(int source_id, int target_id, String message, String datetime);
+void DisplaySizeAndTopologia(int qtde_nodos_X_Y, int topologia);
+void DisplayLoading();
+void ClearDisplay();
