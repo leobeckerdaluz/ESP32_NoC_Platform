@@ -8,6 +8,7 @@ void get_direction(int current_id, int target, int *distance, int *direction, in
 void get_XY(int id, int *id_X, int *id_Y, int qtd_nodos_X_Y);
 int getID_by_XY(int x_source, int y_source, int qtd_nodos_X_Y);
 int get_next_by_dir(int id, int direction_mode, int topologia_local, int qtde_nodos_X_Y);
+int verify_defines();
 
 
 // ---------------------------------------------------------------------------
@@ -211,4 +212,52 @@ int get_next_by_dir(int id, int direction_mode, int topologia_local, int qtde_no
         return bottom;
     else 
         return BIG_NUMBER;
+}
+
+// ---------------------------------------------------------------------------
+// Método que verifica se as definições são válidas
+int verify_defines(){
+    printf("--------------------------------------------------------------------------------------------------\n");
+    // Na topologia ANEL_1D, Y deve ser 1
+    #if (defined TOPOLOGIA_ANEL_1D) && (QTD_NODOS_X_Y != 1)
+        printf("Na topologia Anel, a quantidade de nodos de Y precisa obrigatoriamente ser 1!\n");
+        return -1;
+    #endif
+
+    // A execução não pode ser feita somente com um nodo
+    #if (QTD_NODOS_X_Y == 1) && (QTD_NODOS_X_Y == 1)
+        printf("Não é possível executar o programa com apenas 1 PE!\n");
+        return -1;
+    #endif
+
+    // Verifica se os valores de X e Y são pares se a topologia não é a ANEL_1D
+    #if ((QTD_NODOS_X_Y%2 == 1) || (QTD_NODOS_X_Y%2 == 1)) && (!defined TOPOLOGIA_ANEL_1D)
+        printf("Só é possível executar NoC com tamanhos de X e Y pares!\n");
+        return -1;
+    #endif
+
+    // Verifica se os dois tipos de entradas no arquivo foram declaradas simultâneamente
+    #if (defined FILE_READ_ID) && (defined FILE_READ_XY)
+        printf("Só é possível ler o arquivo ou pelo tipo XY ou pelo tipo ID. Os dois juntos não é possível!\n");
+        return -1;
+    #endif
+
+    // Verifica se duas ou mais topologias foram declaradas simultâneamente
+    char cont_topologies = 0;
+    #if (defined TOPOLOGIA_ANEL_1D)
+        cont_topologies++;
+    #endif
+    #if (defined TOPOLOGIA_ANEL_2D)
+        cont_topologies++;
+    #endif
+    #if (defined TOPOLOGIA_MESH)
+        cont_topologies++;
+    #endif
+    if (cont_topologies > 1){
+        printf("Só é possível usar uma topologia!\n");
+        return -1;
+    }
+
+    // Alright, return 0!
+    return 0;
 }
