@@ -7,7 +7,7 @@
 
 std::mutex mutex_print;
 
-bool start_processors[(QTD_NODOS_X*QTD_NODOS_Y)];
+bool start_processors[(QTD_NODOS_X_Y*QTD_NODOS_X_Y)];
 
 void show_messages(int id, std::vector<MESSAGE> messages_arrived);
 

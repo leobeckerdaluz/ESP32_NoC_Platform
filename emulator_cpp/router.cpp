@@ -3,8 +3,8 @@
 #include <cstring>
 #include "defines.h"
 
-bool messages_to_send_yet[(QTD_NODOS_X*QTD_NODOS_Y)];
-bool start_routers[(QTD_NODOS_X*QTD_NODOS_Y)];
+bool messages_to_send_yet[(QTD_NODOS_X_Y*QTD_NODOS_X_Y)];
+bool start_routers[(QTD_NODOS_X_Y*QTD_NODOS_X_Y)];
 
 bool receive_from_left = false;
 bool receive_from_right = false;
@@ -16,10 +16,6 @@ std::vector<Communication> PEs_communication;
 std::vector<ProcExecution> Processors_execution;
 
 MESSAGE global_msg;
-
-void get_direction(int id, int target, int *msgs_dist, int *direcao);
-void get_direction_2D(int id_X, int id_Y, int target_X, int target_Y, int *dist_linhas, int *direction_linha, int *dist_colunas, int *direction_coluna);
-void get_XY(int id, int *id_X, int *id_Y);
 
 void reset_flags(){
     receive_from_left = false;
@@ -39,49 +35,26 @@ void router(int id, std::vector<MESSAGE> messages) {
     int cont_msgs_tantofaz = 0;
     int cont_msgs_proc = 0;
     
-    // Direções de envio da Topologia Mesh são setadas
-    #ifdef TOPOLOGIA_MESH
-        // int left = (id == (0 + (int)(id/QTD_NODOS_X)*QTD_NODOS_X))) ? BIG_NUMBER : id-1;
-        int left = (id%QTD_NODOS_X == 0) ? BIG_NUMBER : id-1;
-        // int right = (id == (2 + (int)(id/QTD_NODOS_X*QTD_NODOS_X))) ? BIG_NUMBER : id+1;
-        int right = (id%QTD_NODOS_X == QTD_NODOS_X-1) ? BIG_NUMBER : id+1;
-        int top = (id >= QTD_NODOS_X*(QTD_NODOS_Y-1)) ? BIG_NUMBER : id + QTD_NODOS_X;
-        int bottom = (id < QTD_NODOS_X) ? BIG_NUMBER : id - QTD_NODOS_X;
-    #endif
-
-    // Direções de envio da Topologia Anel 2D são setadas
-    #ifdef TOPOLOGIA_ANEL_2D
-        // int left = (id == (0 + (int)(id/QTD_NODOS_X)*QTD_NODOS_X)) ? id+(QTD_NODOS_X-1) : id-1;
-        int left = (id%QTD_NODOS_X == 0) ? id+QTD_NODOS_X-1 : id-1;
-        // int right = (id == (2 + (int)(id/QTD_NODOS_X)*QTD_NODOS_X)) ? id-QTD_NODOS_X+1 : id+1;
-        int right = (id%QTD_NODOS_X == QTD_NODOS_X-1) ? id-QTD_NODOS_X+1 : id+1;
-        int top = (id >= QTD_NODOS_X*(QTD_NODOS_Y-1)) ? id-(QTD_NODOS_X*QTD_NODOS_Y)+QTD_NODOS_X : id + QTD_NODOS_X;
-        int bottom = (id < QTD_NODOS_X) ? (QTD_NODOS_X*QTD_NODOS_Y)-QTD_NODOS_Y+id : id - QTD_NODOS_X;
-    #endif
-
-    // Direções de envio da Topologia Anel 1D são setadas
-    #ifdef TOPOLOGIA_ANEL_1D
-        int left = (id==0) ? (QTD_NODOS_X*QTD_NODOS_Y)-1 : id-1;
-        int right = (id==(QTD_NODOS_X*QTD_NODOS_Y)-1) ? 0 : id+1;
-    #endif
+    int topologia;
 
     // Contador e iterador de mensagens a serem enviadas
     int iterator_messages_vector = 0;
     // Informações sobre direções são apresentadas
     #if defined TOPOLOGIA_ANEL_1D
-        printf("Router%d -> R&A -> Estou pronto para começar! Esquerda:%d, Direita:%d.\n", id, left, right);
-    #endif
-    #if (defined TOPOLOGIA_ANEL_2D) || (defined TOPOLOGIA_MESH)
-        printf("Router%d -> R&A -> Estou pronto para começar! Esquerda:%d, Direita:%d, Cima:%d, Baixo:%d.\n", id, left, right, top, bottom);
+        topologia = ANEL_1D;
+    #elif (defined TOPOLOGIA_ANEL_2D)
+        topologia = ANEL_2D;
+    #elif (defined TOPOLOGIA_MESH)
+        topologia = MESH;
     #endif
 
     // Cria o PE e adiciona na lista global
     PE pe;
     pe.id = id;
-    pe.right = right;
-    pe.left = left;
-    pe.top = top;
-    pe.bottom = bottom;
+    pe.right = get_next_by_dir(id, RIGHT, topologia, QTD_NODOS_X_Y);
+    pe.left = get_next_by_dir(id, LEFT, topologia, QTD_NODOS_X_Y);
+    pe.top = get_next_by_dir(id, TOP, topologia, QTD_NODOS_X_Y);
+    pe.bottom = get_next_by_dir(id, BOTTOM, topologia, QTD_NODOS_X_Y);
     all_PEs.push_back(pe);
 
     printf(". Tenho %d msgs para enviar!\n", messages.size());
@@ -177,7 +150,6 @@ void router(int id, std::vector<MESSAGE> messages) {
         // Se chegou aqui é porque não pode mandar uma mensagem e porque não é a vez de encaminhar, então volta no loop
         goto loop;
 
-
         // Encaminha uma mensagem própria ou de outro router
         get_directions:
 
@@ -185,119 +157,89 @@ void router(int id, std::vector<MESSAGE> messages) {
         int message_id = global_msg.message_id;
         int target = global_msg.header_target;
 
-        int direction_linha;
-        int dist_linhas;
+        int direction;
+        int distance;
         
-        int direction_coluna;
-        int dist_colunas;
+        // Obtém a direção e a distância do próximo router
+        get_direction(id, target, &distance, &direction, topologia, QTD_NODOS_X_Y);
+        printf("[%d] to [%d] | distance:%d | direction:%d\n", id, target, distance, direction);
 
-        int target_X;
-        int target_Y;
-        get_XY(target, &target_X, &target_Y);
-
-        int id_X;
-        int id_Y;
-        get_XY(id, &id_X, &id_Y);
-        
-        #ifdef TOPOLOGIA_ANEL_1D
-            get_direction(id, target, &dist_linhas, &direction_linha);
-        #endif
-        #if (!defined TOPOLOGIA_ANEL_1D)
-            get_direction_2D(id_X, id_Y, target_X, target_Y, &dist_linhas, &direction_linha, &dist_colunas, &direction_coluna);
-            // printf("[%d][%d] to [%d][%d], dist_linhas:%d, dir_linhas:%d, dist_colunas:%d, dir_coluna:%d\n", id_Y, id_X, target_Y, target_X, dist_linhas, direction_linha, dist_colunas, direction_coluna);
-        #endif
-
-        if(direction_linha == 0) {
+        // Verifica a direção retornada
+        if(direction == LEFT) {
             // Vai para esquerda
-            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições à esquerda!\n", id, message_id, target, dist_linhas);
-            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", id, global_msg.message_id, left);
+            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições à esquerda!\n", id, message_id, target, distance);
+            // Obtém o id do router da esquerda
+            int left = get_next_by_dir(id, LEFT, topologia, QTD_NODOS_X_Y);
+            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", id, message_id, left);
             // Reseta as flags
             reset_flags();
             // Mensagem será enviada pela esquerda, então chegará pela direita
             receive_from_left = true;
             // Incrementa o contador de mensagens pela esquerda 
             cont_msgs_left++;
-            // Agora é a vez do nodo da direita
+            // Agora é a vez do nodo da esquerda
             turn_id = left;
         }
-        else if (direction_linha == 2) {
+        else if ((direction == RIGHT) || (direction == ANY_X)) {
             // Vai para direita
-            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições à direita!\n", id, message_id, target, dist_linhas);
-            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", id, global_msg.message_id, right);
+            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. ", id, message_id, target);
+            if (direction == ANY_X)
+                printf("Está à %d posições pra esquerda ou direita. Enviando para a direita!\n", distance);
+            else
+                printf("Ainda precisa andar %d posições à direita!\n", distance);
+            // Obtém o id do router da direita
+            int right = get_next_by_dir(id, RIGHT, topologia, QTD_NODOS_X_Y);
+            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", id, message_id, right);
             // Reseta as flags
             reset_flags();
             // Mensagem será enviada pela direita, então chegará pela esquerda
-            receive_from_left = true;
+            receive_from_right = true;
             // Incrementa o contador de mensagens pela direita 
             cont_msgs_right++;
             // Agora é a vez do nodo da direita
             turn_id = right;
         }
-        #if (defined TOPOLOGIA_ANEL_1D)
-            else if (direction_linha == 1) {
-                printf("Router%d -> R&A -> A msg %d em trânsito chegou no destino em X(%d) e em Y(%d)!\n", id, message_id, target_Y, target_X);
-                // Mensagem será enviada para o processador, então somente reseta as flags
-                reset_flags();
-                // Seta o id do processador a consumir
-                id_proc_consumidor = target;
-                // Incrementa o contador de mensagens enviadas para o processador
-                cont_msgs_proc++;
-                // Agora é a vez do INFINITO
-                turn_id = BIG_NUMBER;
-            }
-            else if (direction_linha == 3){
-                // Tanto faz
-                printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Está à %d posições tanto à direita como à esquerda. Enviando para a direita!\n", id, message_id, target, dist_linhas);
-                printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", id, global_msg.message_id, right);
-                // Reseta as flags
-                reset_flags();
-                // Mensagem será enviada pela direita, então chegará pela esquerda
-                receive_from_left = true;
-                // Incrementa o contador de mensagens pela direita (Tanto Faz)
-                cont_msgs_tantofaz++;
-                // Agora é a vez do nodo da direita
-                turn_id = right;
-            }
-        #endif
-        #if (!defined TOPOLOGIA_ANEL_1D )
-            else if (direction_linha == 1) {
-                // Chegou no destino em X
-                printf("Router%d -> R&A -> A msg %d em trânsito chegou no destino em X!\n", id, message_id);
-                if (direction_coluna == 0){
-                    printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições pra baixo!\n", id, message_id, target, dist_linhas);
-                    // Reseta as flags
-                    reset_flags();
-                    // Mensagem será enviada para baixo, então será recebida por cima
-                    receive_from_bottom = true;
-                    // Incrementa o contador de mensagens por baixo
-                    cont_msgs_bottom++;
-                    // Agora é a vez do nodo de baixo
-                    turn_id = bottom;
-                }
-                else if (direction_coluna == 2){
-                    printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições pra cima!\n", id, message_id, target, dist_linhas);
-                    // Reseta as flags
-                    reset_flags();
-                    // Mensagem será enviada para cima, então será recebida por baixo
-                    receive_from_bottom = true;
-                    // Incrementa o contador de mensagens por cima
-                    cont_msgs_top++;
-                    // Agora é a vez do nodo de cima
-                    turn_id = top;
-                }
-                else if (direction_coluna == 1){
-                    printf("Router%d -> R&A -> A msg %d em trânsito chegou no destino em X(%d) e em Y(%d)!\n", id, message_id, target_Y, target_X);
-                    // Mensagem será enviada para o processador, então somente reseta as flags
-                    reset_flags();
-                    // Seta o id do processador a consumir
-                    id_proc_consumidor = target;
-                    // Incrementa o contador de mensagens enviadas para o processador
-                    cont_msgs_proc++;
-                    // Agora é a vez do INFINITO
-                    turn_id = BIG_NUMBER;
-                }
-            }
-        #endif
+        else if ((direction == TOP) || (direction == ANY_Y)) {
+            // Vai para cima
+            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições pra cima!\n", id, message_id, target, distance);
+            // Obtém o id do router de cima
+            int top = get_next_by_dir(id, TOP, topologia, QTD_NODOS_X_Y);
+            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", id, message_id, top);
+            // Reseta as flags
+            reset_flags();
+            // Mensagem será enviada por cima, então chegará por baixo
+            receive_from_top = true;
+            // Incrementa o contador de mensagens por cima 
+            cont_msgs_top++;
+            // Agora é a vez do nodo de cima
+            turn_id = top;
+        }
+        else if (direction == BOTTOM) {
+            // Vai para baixo
+            printf("Router%d -> R&A -> A msg %d em trânsito é para o target=%d. Ainda precisa andar %d posições pra baixo!\n", id, message_id, target, distance);
+            // Obtém o id do router de cima
+            int bottom = get_next_by_dir(id, BOTTOM, topologia, QTD_NODOS_X_Y);
+            printf("Router%d -> Switch -> Enviando a mensagem %d para o router %d!\n", id, message_id, bottom);
+            // Reseta as flags
+            reset_flags();
+            // Mensagem será enviada por baixo, então chegará por cima
+            receive_from_bottom = true;
+            // Incrementa o contador de mensagens por baixo
+            cont_msgs_bottom++;
+            // Agora é a vez do nodo de baixo
+            turn_id = bottom;
+        }
+        else if (direction == ARRIVED) {
+            printf("Router%d -> R&A -> A msg %d em trânsito chegou no destino em [%d]!\n", id, message_id, target);
+            // Mensagem será enviada para o processador, então somente reseta as flags
+            reset_flags();
+            // Seta o id do processador a consumir
+            id_proc_consumidor = target;
+            // Incrementa o contador de mensagens enviadas para o processador
+            cont_msgs_proc++;
+            // Agora é a vez do INFINITO
+            turn_id = BIG_NUMBER;
+        }
     }
 
     // Aqui a thread já encerrou sem isso

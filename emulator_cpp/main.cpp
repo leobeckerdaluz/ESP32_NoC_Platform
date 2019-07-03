@@ -3,8 +3,8 @@
 #include <vector>
 #include "defines.h"
 
-std::thread processors[(QTD_NODOS_X*QTD_NODOS_Y)];
-std::thread routers[(QTD_NODOS_X*QTD_NODOS_Y)];
+std::thread processors[(QTD_NODOS_X_Y*QTD_NODOS_X_Y)];
+std::thread routers[(QTD_NODOS_X_Y*QTD_NODOS_X_Y)];
 
 bool start_all = false;
 bool all_messages_sent = false;
@@ -42,13 +42,13 @@ int main() {
     // }
 
     printf("--------------------------------------------------------------------------------------------------\n");
-    printf("%d threads de processors e %d de routers serão criadas!\n", (QTD_NODOS_X*QTD_NODOS_Y), (QTD_NODOS_X*QTD_NODOS_Y));
+    printf("%d threads de processors e %d de routers serão criadas!\n", (QTD_NODOS_X_Y*QTD_NODOS_X_Y), (QTD_NODOS_X_Y*QTD_NODOS_X_Y));
     printf("--------------------------------------------------------------------------------------------------\n");
     
     // --------------------------------------------------------------
-    // Inicializa as threads
+    // Inicializa as threads - A cada i, cria um router e um processor
     // --------------------------------------------------------------
-    for (int id = 0; id < (QTD_NODOS_X*QTD_NODOS_Y); ++id) {
+    for (int id = 0; id < (QTD_NODOS_X_Y*QTD_NODOS_X_Y); ++id) {
         // Obtém as mensagens que têm o source como esse id
         std::vector<MESSAGE> messages;
         for(int j=0; j<allMessages.size(); j++)
@@ -69,7 +69,7 @@ int main() {
     while(!start_all){
         loop_start_all:
 
-        for(int i=0; i<(QTD_NODOS_X*QTD_NODOS_Y); i++)
+        for(int i=0; i<(QTD_NODOS_X_Y*QTD_NODOS_X_Y); i++)
             if ( (!start_routers[i]) || (!start_processors[i]) )
                 goto loop_start_all;
 
@@ -95,7 +95,7 @@ int main() {
     while(!all_messages_sent){
         loop_end_all:
 
-        for(int i=0; i<(QTD_NODOS_X*QTD_NODOS_Y); i++)
+        for(int i=0; i<(QTD_NODOS_X_Y*QTD_NODOS_X_Y); i++)
             if ( messages_to_send_yet[i] )
                 goto loop_end_all;
 
@@ -117,7 +117,7 @@ int main() {
     // --------------------------------------------------------------
     // Aguarda as threads encerrarem
     // --------------------------------------------------------------
-    for (int i = 0; i < (QTD_NODOS_X*QTD_NODOS_Y); ++i) {
+    for (int i = 0; i < (QTD_NODOS_X_Y*QTD_NODOS_X_Y); ++i) {
         processors[i].join();
         routers[i].join();
     }
@@ -126,8 +126,8 @@ int main() {
     // Organiza as informações finais de execução
     // --------------------------------------------------------------
     AllStruct all_info;
-    all_info.x = std::to_string(QTD_NODOS_X);
-    all_info.y = std::to_string(QTD_NODOS_Y);
+    all_info.x = std::to_string(QTD_NODOS_X_Y);
+    all_info.y = std::to_string(QTD_NODOS_X_Y);
     all_info.topologia = "MESH";
     all_info.all_PEs_inside = all_PEs;
     all_info.PEs_communication_inside = PEs_communication;

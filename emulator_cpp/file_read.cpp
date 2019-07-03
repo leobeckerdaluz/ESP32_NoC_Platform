@@ -64,14 +64,14 @@ std::vector<MESSAGE> readFile() {
                 printf("SOURCE(%d): %d %d - TARGET(%d): %d %d\n", id_source, x_source, y_source, id_target, x_target, y_target);
             #endif
 
-            if ( (msg.header_target<0) || (msg.header_target>=(QTD_NODOS_X*QTD_NODOS_Y)) ) {
+            if ( (msg.header_target<0) || (msg.header_target>=(QTD_NODOS_X_Y*QTD_NODOS_X_Y)) ) {
                 printf("--------------------------------------------------------------------------------------------------\n");
                 printf("Target da mensagem de id %d está fora dos ranges!\n", msg.message_id);
                 std::vector<MESSAGE> empty;
                 return empty; 
             }
 
-            if ( (msg.header_source<0) || (msg.header_source>=(QTD_NODOS_X*QTD_NODOS_Y)) ) {
+            if ( (msg.header_source<0) || (msg.header_source>=(QTD_NODOS_X_Y*QTD_NODOS_X_Y)) ) {
                 printf("--------------------------------------------------------------------------------------------------\n");
                 printf("Source da mensagem de id %d está fora dos ranges!\n", msg.message_id);
                 std::vector<MESSAGE> empty;
